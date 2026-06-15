@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>乳牛發情週期計算</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--border:#d6dbe4;--accent:#2563eb;--voice:#ef4444;--voice-strong:#dc2626;--highlight-bg:#dbeafe;--highlight-border:#60a5fa;--overlay:rgba(15,23,42,.55)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;font-family:-apple-system,"SF Pro",system-ui,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+body{display:flex;flex-direction:column}
+.app{display:flex;flex-direction:column;flex:1;max-width:920px;width:100%;margin:0 auto;min-height:100%;position:relative;overflow:hidden}
+header{padding:16px 16px 4px}
+h1{margin:0;font-size:20px;line-height:1.2}
+.subtitle{margin:4px 0 0;color:var(--muted);font-size:12px}
+main{flex:1;padding:8px 16px 4px;display:flex;flex-direction:column;gap:12px;overflow:hidden;min-height:0}
+.last-result{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.last-result.hidden{display:none}
+.placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:16px}
+.placeholder.hidden{display:none}
+.placeholder .emoji{font-size:56px;margin-bottom:12px}
+.placeholder .text{font-size:14px;line-height:1.7}
+
+.bottom-area{flex-shrink:0;padding:8px 0 env(safe-area-inset-bottom,12px)}
+.manual-section{margin:0 16px 12px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 6px 16px rgba(0,0,0,.06);max-height:55vh;overflow-y:auto}
+.manual-section.hidden{display:none}
+.input-row{display:flex;gap:8px}
+.day-input{flex:1;min-width:0;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;outline:none;background:#fff}
+.day-input:focus{border-color:var(--accent)}
+.calc-btn{border:none;background:var(--accent);color:#fff;border-radius:12px;padding:12px 18px;font-size:15px;font-weight:700;cursor:pointer}
+.input-error{margin-top:8px;font-size:13px;color:#dc2626;display:none}
+.grid-title{margin:12px 0 6px;font-size:12px;font-weight:700;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:5px;max-height:180px;overflow-y:auto}
+.day{background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 2px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;user-select:none}
+.day:active{transform:scale(.96);background:var(--highlight-bg)}
+
+.action-bar{display:flex;gap:12px;padding:0 16px;align-items:center;justify-content:flex-end}
+.toggle-btn{width:56px;height:56px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:22px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.toggle-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.voice-btn{height:64px;padding:0 26px;min-width:200px;border-radius:999px;border:none;background:var(--voice);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(239,68,68,.4);display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0}
+.voice-btn:active{transform:scale(.97)}
+.mic-icon{font-size:24px;line-height:1}
+
+/* Voice mode overlay */
+.voice-overlay{position:fixed;inset:0;background:linear-gradient(180deg,#fef2f2 0%,#f5f7fb 30%);z-index:100;display:flex;flex-direction:column;animation:voiceIn .25s ease-out}
+.voice-overlay.hidden{display:none}
+@keyframes voiceIn{from{opacity:0}to{opacity:1}}
+.voice-top{padding:14px 12px 0;display:flex;align-items:center;justify-content:flex-start;flex-shrink:0}
+.voice-cancel{border:none;background:transparent;color:var(--muted);font-size:16px;font-weight:600;cursor:pointer;padding:8px 14px}
+.voice-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 24px 12px;gap:14px;overflow-y:auto;min-height:0}
+.orb-stage{position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:8px}
+.orb-ring{position:absolute;inset:0;border-radius:50%;border:2px solid #ef4444;opacity:0;animation:orbRing 2.4s cubic-bezier(.2,.7,.2,1) infinite}
+.orb-ring.r1{animation-delay:0s}
+.orb-ring.r2{animation-delay:.8s}
+.orb-ring.r3{animation-delay:1.6s}
+.orb-core{width:64px;height:64px;border-radius:50%;background:linear-gradient(180deg,#f87171,#dc2626);box-shadow:0 12px 28px rgba(239,68,68,.5),inset 0 -4px 10px rgba(0,0,0,.18),inset 0 3px 8px rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;animation:orbBreathe 1.8s ease-in-out infinite}
+@keyframes orbRing{0%{transform:scale(.55);opacity:.55}70%{opacity:.05}100%{transform:scale(1.6);opacity:0}}
+@keyframes orbBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.voice-title{font-size:20px;font-weight:700;color:var(--text);text-align:center;margin:0}
+.voice-hint{font-size:14px;color:#dc2626;text-align:center;font-weight:600;display:flex;align-items:center;gap:6px;background:#fff;padding:10px 16px;border-radius:999px;border:1.5px solid #fecaca;box-shadow:0 4px 12px rgba(239,68,68,.15);flex-wrap:wrap;justify-content:center}
+.voice-hint .arrow{font-size:18px;animation:bounceDown 1.4s ease-in-out infinite}
+@keyframes bounceDown{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.voice-input{width:100%;max-width:480px;border:2px solid var(--border);border-radius:14px;padding:16px;font-size:22px;font-weight:600;text-align:center;background:#fff;outline:none;color:var(--text);font-family:inherit;-webkit-user-select:text;user-select:text}
+.voice-input:focus{border-color:#ef4444}
+.voice-input::placeholder{color:#cbd5e1;font-weight:400;font-size:16px}
+
+.voice-submit-bar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px env(safe-area-inset-bottom,10px);display:none;justify-content:flex-end;background:linear-gradient(180deg,transparent 0,rgba(245,247,251,.95) 30%,#f5f7fb 100%);pointer-events:none;z-index:101}
+.voice-submit-bar.show{display:flex}
+.voice-submit-bar > *{pointer-events:auto}
+.voice-submit{height:56px;padding:0 36px;min-width:140px;border-radius:999px;border:none;background:var(--accent);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(37,99,235,.4);display:flex;align-items:center;justify-content:center;gap:8px}
+.voice-submit:active{transform:scale(.97)}
+.voice-submit:disabled{background:#94a3b8;box-shadow:none;cursor:not-allowed}
+
+.toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);background:rgba(15,23,42,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:200;white-space:nowrap;display:none;max-width:90vw}
+.toast.show{display:block}
+
+.modal-overlay{position:fixed;inset:0;background:var(--overlay);display:none;align-items:flex-end;justify-content:center;z-index:300}
+.modal-overlay.show{display:flex}
+.modal{width:100%;max-width:600px;max-height:90%;background:var(--card);border-radius:22px 22px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;animation:slideUp .25s ease-out}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 18px 12px;border-bottom:1px solid #e5e7eb;gap:10px}
+.modal-title-wrap{flex:1;min-width:0}
+.modal-title{margin:0;font-size:20px;font-weight:700}
+.voice-text{margin:4px 0 0;font-size:12px;color:var(--muted);word-break:break-all}
+.close{border:none;background:#f3f4f6;width:36px;height:36px;border-radius:50%;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.modal-body{padding:14px 16px;overflow-y:auto;flex:1}
+.result-list{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:50px 1fr auto;gap:10px;align-items:baseline;border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:#fff}
+.row.highlight{background:var(--highlight-bg);border-color:var(--highlight-border)}
+.label{font-weight:700;font-size:16px}
+.value{font-size:16px}
+.remainder{font-size:13px;color:var(--muted);font-weight:500;white-space:nowrap}
+.row.highlight .remainder{color:#1e40af}
+.hint-line{color:var(--muted);font-size:12px;line-height:1.5;margin:10px 0 0}
+.modal-footer{padding:12px 16px 16px;border-top:1px solid #e5e7eb;background:var(--bg)}
+.close-large{width:100%;height:52px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<h1>乳牛發情週期計算</h1>
+<p class="subtitle">語音說出天數，或開啟手動輸入</p>
+</header>
+<main>
+<div id="lastResult" class="last-result hidden"></div>
+<div id="placeholder" class="placeholder">
+<div class="emoji">🐄</div>
+<div class="text">
+按下方紅色麥克風按鈕<br>
+進入語音模式後再點鍵盤上的 🎤<br>
+說出天數，例如「150」或「一百五十」<br><br>
+按 <strong>⌨</strong> 圖示可切換手動輸入
+</div>
+</div>
+</main>
+<div class="bottom-area">
+<div id="manualSection" class="manual-section hidden">
+<div class="input-row">
+<input id="dayInput" class="day-input" type="number" inputmode="numeric" min="1" step="1" placeholder="輸入任意正整數" />
+<button id="calcBtn" class="calc-btn">計算</button>
+</div>
+<div id="inputError" class="input-error">請輸入正整數</div>
+<div class="grid-title">快速選擇 40–320</div>
+<div id="grid" class="grid"></div>
+</div>
+<div class="action-bar">
+<button id="toggleManualBtn" class="toggle-btn" aria-label="切換手動輸入">⌨</button>
+<button id="voiceBtn" class="voice-btn" aria-label="語音輸入">
+<span class="mic-icon">🎤</span>
+<span>說出天數</span>
+</button>
+</div>
+</div>
+</div>
+
+<div id="voiceOverlay" class="voice-overlay hidden">
+  <div class="voice-top">
+    <button id="voiceCancel" class="voice-cancel">取消</button>
+  </div>
+  <div class="voice-body">
+    <div class="orb-stage">
+      <div class="orb-ring r1"></div>
+      <div class="orb-ring r2"></div>
+      <div class="orb-ring r3"></div>
+      <div class="orb-core">🎤</div>
+    </div>
+    <div class="voice-title">說出天數</div>
+    <div class="voice-hint">
+      <span>點鍵盤上的</span>
+      <span style="font-size:18px">🎤</span>
+      <span>開始錄音</span>
+      <span class="arrow">👇</span>
+    </div>
+    <input id="voiceInput" class="voice-input" type="text" inputmode="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="例如：150 / 一百五十" enterkeyhint="done" />
+  </div>
+</div>
+<div id="voiceSubmitBar" class="voice-submit-bar">
+  <button id="voiceSubmit" class="voice-submit" disabled>完成 →</button>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+<div class="modal">
+<div class="modal-header">
+<div class="modal-title-wrap">
+<h2 class="modal-title" id="title">結果</h2>
+<p class="voice-text" id="voiceText"></p>
+</div>
+<button class="close" id="closeBtn">×</button>
+</div>
+<div class="modal-body">
+<div class="result-list" id="resultList"></div>
+<p class="hint-line">Highlight 依與最近整數的距離判定；顯示值四捨五入到小數點第三位，餘數為整數天數。</p>
+</div>
+<div class="modal-footer">
+<button class="close-large" id="closeLargeBtn">完成</button>
+</div>
+</div>
+</div>
+
+<script>
+const MIN_CYCLE = 18, MAX_CYCLE = 25;
+const GRID_MIN = 40, GRID_MAX = 320;
+
+const $ = id => document.getElementById(id);
+const placeholder = $('placeholder');
+const lastResult = $('lastResult');
+const modalOverlay = $('modalOverlay');
+const title = $('title');
+const voiceText = $('voiceText');
+const resultList = $('resultList');
+const closeBtn = $('closeBtn');
+const closeLargeBtn = $('closeLargeBtn');
+const dayInput = $('dayInput');
+const calcBtn = $('calcBtn');
+const inputError = $('inputError');
+const toggleManualBtn = $('toggleManualBtn');
+const manualSection = $('manualSection');
+const voiceBtn = $('voiceBtn');
+const grid = $('grid');
+const toast = $('toast');
+const voiceOverlay = $('voiceOverlay');
+const voiceInput = $('voiceInput');
+const voiceCancel = $('voiceCancel');
+const voiceSubmit = $('voiceSubmit');
+const voiceSubmitBar = $('voiceSubmitBar');
+
+function distanceToNearestInteger(v){return Math.abs(v-Math.round(v));}
+function computeResults(day){
+  const rows = [];
+  for (let c = MIN_CYCLE; c <= MAX_CYCLE; c++){
+    const raw = day / c;
+    rows.push({
+      cycle: c,
+      raw,
+      display: raw.toFixed(3),
+      distance: distanceToNearestInteger(raw),
+      remainder: day % c
+    });
+  }
+  const minD = Math.min(...rows.map(r => r.distance));
+  return rows.map(r => ({...r, highlight: Math.abs(r.distance - minD) < 1e-12}));
+}
+
+function openModal(day, sourceText){
+  const results = computeResults(day);
+  title.textContent = day + ' 天';
+  if (sourceText){voiceText.textContent = '辨識內容：「' + sourceText + '」';voiceText.style.display = 'block';}
+  else {voiceText.style.display = 'none';}
+  resultList.innerHTML = '';
+  results.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'row' + (item.highlight ? ' highlight' : '');
+    const label = document.createElement('div'); label.className = 'label'; label.textContent = item.cycle + ':';
+    const value = document.createElement('div'); value.className = 'value'; value.textContent = item.display;
+    const rem = document.createElement('div'); rem.className = 'remainder'; rem.textContent = '餘 ' + item.remainder + ' 天';
+    row.appendChild(label); row.appendChild(value); row.appendChild(rem);
+    resultList.appendChild(row);
+  });
+  const hl = results.filter(r => r.highlight);
+  lastResult.innerHTML =
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:6px;">最近一次：' + day + ' 天' +
+    (sourceText ? ' · 「' + sourceText + '」' : '') + '</div>' +
+    '<div style="font-size:15px;">最接近整數的週期：<strong>' + hl.map(r => r.cycle).join(', ') + '</strong></div>' +
+    '<div style="font-size:13px;color:var(--muted);margin-top:4px;">商：' + hl.map(r => r.display).join(', ') +
+    ' · 餘：' + hl.map(r => r.remainder + ' 天').join(', ') + '</div>';
+  lastResult.classList.remove('hidden');
+  placeholder.classList.add('hidden');
+  modalOverlay.classList.add('show');
+}
+function closeModal(){modalOverlay.classList.remove('show');}
+
+function showInputError(msg){inputError.textContent = msg; inputError.style.display = 'block';}
+function hideInputError(){inputError.style.display = 'none';}
+function handleManualInput(){
+  const v = dayInput.value.trim();
+  if (v === ''){showInputError('請輸入正整數'); return;}
+  const day = Number(v);
+  if (!Number.isInteger(day) || day <= 0){showInputError('請輸入正整數'); return;}
+  hideInputError(); openModal(day, null);
+}
+
+const CN_DIGITS = {'零':0,'〇':0,'一':1,'二':2,'兩':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'壹':1,'貳':2,'貮':2,'参':3,'參':3,'肆':4,'伍':5,'陸':6,'陆':6,'柒':7,'捌':8,'玖':9};
+function parseChineseNumber(text){
+  let result = 0, section = 0, current = 0;
+  for (const ch of text){
+    if (Object.prototype.hasOwnProperty.call(CN_DIGITS, ch)) current = CN_DIGITS[ch];
+    else if (ch === '十' || ch === '拾'){section += (current || 1) * 10; current = 0;}
+    else if (ch === '百' || ch === '佰'){section += (current || 1) * 100; current = 0;}
+    else if (ch === '千' || ch === '仟'){section += (current || 1) * 1000; current = 0;}
+    else if (ch === '萬' || ch === '万'){result += (section + current) * 10000; section = 0; current = 0;}
+  }
+  return result + section + current;
+}
+function extractDayFromText(text){
+  if (!text) return null;
+  const m = text.match(/\d+/);
+  if (m){const n = parseInt(m[0], 10); if (n > 0 && n < 100000) return n;}
+  const cn = text.match(/[零〇一二兩两三四五六七八九十百千萬万壹貳貮参參肆伍陸陆柒捌玖拾佰仟]+/);
+  if (cn){const n = parseChineseNumber(cn[0]); if (n > 0 && n < 100000) return n;}
+  return null;
+}
+
+function showToast(msg, ms){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), ms || 2400);
+}
+
+function positionSubmitBar(){
+  if (!window.visualViewport) return;
+  const vv = window.visualViewport;
+  const offset = window.innerHeight - vv.height - vv.offsetTop;
+  voiceSubmitBar.style.bottom = Math.max(0, offset) + 'px';
+}
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', positionSubmitBar);
+  window.visualViewport.addEventListener('scroll', positionSubmitBar);
+}
+
+function openVoiceMode(){
+  voiceInput.value = '';
+  voiceSubmit.disabled = true;
+  voiceOverlay.classList.remove('hidden');
+  voiceSubmitBar.classList.add('show');
+  voiceInput.focus();
+  positionSubmitBar();
+}
+function closeVoiceMode(){
+  voiceInput.blur();
+  voiceOverlay.classList.add('hidden');
+  voiceSubmitBar.classList.remove('show');
+}
+function submitVoice(){
+  const text = voiceInput.value.trim();
+  if (!text){closeVoiceMode(); showToast('沒有輸入內容'); return;}
+  const day = extractDayFromText(text);
+  closeVoiceMode();
+  if (!day){showToast('無法辨識:「' + text + '」', 2800); return;}
+  openModal(day, text);
+}
+
+voiceOverlay.addEventListener('mousedown', e => {
+  if (e.target !== voiceInput && e.target.tagName !== 'BUTTON'){e.preventDefault();}
+});
+voiceInput.addEventListener('input', () => {voiceSubmit.disabled = !voiceInput.value.trim();});
+voiceInput.addEventListener('keydown', e => {if (e.key === 'Enter'){e.preventDefault(); submitVoice();}});
+voiceCancel.addEventListener('click', closeVoiceMode);
+voiceSubmit.addEventListener('click', submitVoice);
+
+for (let day = GRID_MIN; day <= GRID_MAX; day++){
+  const btn = document.createElement('div');
+  btn.className = 'day';
+  btn.textContent = day;
+  btn.addEventListener('click', () => openModal(day, null));
+  grid.appendChild(btn);
+}
+
+voiceBtn.addEventListener('click', openVoiceMode);
+
+toggleManualBtn.addEventListener('click', () => {
+  const wasHidden = manualSection.classList.contains('hidden');
+  manualSection.classList.toggle('hidden');
+  toggleManualBtn.classList.toggle('active', wasHidden);
+  if (wasHidden) setTimeout(() => dayInput.focus(), 100);
+});
+
+calcBtn.addEventListener('click', handleManualInput);
+dayInput.addEventListener('keydown', e => {if (e.key === 'Enter') handleManualInput();});
+dayInput.addEventListener('input', hideInputError);
+
+closeBtn.addEventListener('click', closeModal);
+closeLargeBtn.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => {if (e.target === modalOverlay) closeModal();});
+</script>
+</body>
+</html>
