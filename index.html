@@ -89,7 +89,7 @@ main{flex:1;padding:8px 16px 4px;display:flex;flex-direction:column;gap:12px;ove
 .row.highlight{background:var(--highlight-bg);border-color:var(--highlight-border)}
 .label{font-weight:700;font-size:16px}
 .value{font-size:16px}
-.remainder{font-size:13px;color:var(--muted);font-weight:500;white-space:nowrap}
+.remainder{font-size:16px;color:var(--muted);font-weight:500;white-space:nowrap}
 .row.highlight .remainder{color:#1e40af}
 .hint-line{color:var(--muted);font-size:12px;line-height:1.5;margin:10px 0 0}
 .modal-footer{padding:12px 16px 16px;border-top:1px solid #e5e7eb;background:var(--bg)}
@@ -235,7 +235,7 @@ function openModal(day, sourceText){
     row.className = 'row' + (item.highlight ? ' highlight' : '');
     const label = document.createElement('div'); label.className = 'label'; label.textContent = item.cycle + ':';
     const value = document.createElement('div'); value.className = 'value'; value.textContent = item.display;
-    const rem = document.createElement('div'); rem.className = 'remainder'; rem.textContent = '餘 ' + item.remainder + ' 天';
+    const rem = document.createElement('div'); rem.className = 'remainder'; rem.textContent = '餘 ' + item.remainder;
     row.appendChild(label); row.appendChild(value); row.appendChild(rem);
     resultList.appendChild(row);
   });
@@ -245,7 +245,7 @@ function openModal(day, sourceText){
     (sourceText ? ' · 「' + sourceText + '」' : '') + '</div>' +
     '<div style="font-size:15px;">最接近整數的週期：<strong>' + hl.map(r => r.cycle).join(', ') + '</strong></div>' +
     '<div style="font-size:13px;color:var(--muted);margin-top:4px;">商：' + hl.map(r => r.display).join(', ') +
-    ' · 餘：' + hl.map(r => r.remainder + ' 天').join(', ') + '</div>';
+    ' · 餘：' + hl.map(r => r.remainder).join(', ') + '</div>';
   lastResult.classList.remove('hidden');
   placeholder.classList.add('hidden');
   modalOverlay.classList.add('show');
